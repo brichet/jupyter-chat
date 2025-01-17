@@ -3,8 +3,7 @@
  * Distributed under the terms of the Modified BSD License.
  */
 
-import React, { useEffect, useRef, useState } from 'react';
-
+import { IDocumentManager } from '@jupyterlab/docmanager';
 import {
   Autocomplete,
   Box,
@@ -14,13 +13,15 @@ import {
   Theme
 } from '@mui/material';
 import clsx from 'clsx';
+import React, { useEffect, useRef, useState } from 'react';
 
-import { CancelButton } from './input/cancel-button';
-import { SendButton } from './input/send-button';
+import { AttachmentsComponent } from './attachments';
+import { AttachButton, CancelButton, SendButton } from './input';
 import { IChatModel } from '../model';
 import { IAutocompletionRegistry } from '../registry';
 import {
   AutocompleteCommand,
+  IAttachment,
   IAutocompletionCommandsProps,
   IConfig,
   Selection
@@ -29,7 +30,9 @@ import {
 const INPUT_BOX_CLASS = 'jp-chat-input-container';
 
 export function ChatInput(props: ChatInput.IProps): JSX.Element {
-  const { autocompletionName, autocompletionRegistry, model } = props;
+  const { autocompletionName, autocompletionRegistry, documentManager, model } =
+    props;
+
   const autocompletion = useRef<IAutocompletionCommandsProps>();
   const [input, setInput] = useState<string>(props.value || '');
   const [sendWithShiftEnter, setSendWithShiftEnter] = useState<boolean>(
@@ -38,6 +41,7 @@ export function ChatInput(props: ChatInput.IProps): JSX.Element {
   const [typingNotification, setTypingNotification] = useState<boolean>(
     model.config.sendTypingNotification ?? false
   );
+  const [attachments, setAttachments] = useState<IAttachment[]>([]);
 
   // Display the include selection menu if it is not explicitly hidden, and if at least
   // one of the tool to check for text or cell selection is enabled.
@@ -63,9 +67,15 @@ export function ChatInput(props: ChatInput.IProps): JSX.Element {
     };
     model.focusInputSignal?.connect(focusInputElement);
 
+    const attachmentChanged = (_: IChatModel, attachments: IAttachment[]) => {
+      setAttachments([...attachments]);
+    };
+    model.inputAttachmentsChanges?.connect(attachmentChanged);
+
     return () => {
       model.configChanged?.disconnect(configChanged);
       model.focusInputSignal?.disconnect(focusInputElement);
+      model.inputAttachmentsChanges?.disconnect(attachmentChanged);
     };
   }, [model]);
 
@@ -200,6 +210,10 @@ ${selection.source}
 
   return (
     <Box sx={props.sx} className={clsx(INPUT_BOX_CLASS)}>
+      <AttachmentsComponent
+        attachments={attachments}
+        onRemove={model.removeAttachment}
+      />
       <Autocomplete
         options={commandOptions}
         value={props.value}
@@ -233,10 +247,17 @@ ${selection.source}
             onKeyDown={handleKeyDown}
             placeholder="Start chatting"
             inputRef={inputRef}
+            sx={{ marginTop: '1px' }}
             InputProps={{
               ...params.InputProps,
               endAdornment: (
                 <InputAdornment position="end">
+                  {documentManager && model.addAttachment && (
+                    <AttachButton
+                      documentManager={documentManager}
+                      onAttach={model.addAttachment}
+                    />
+                  )}
                   {props.onCancel && <CancelButton onCancel={onCancel} />}
                   <SendButton
                     model={model}
@@ -324,6 +345,10 @@ export namespace ChatInput {
      * Custom mui/material styles.
      */
     sx?: SxProps<Theme>;
+    /**
+     * The document manager.
+     */
+    documentManager?: IDocumentManager;
     /**
      * Autocompletion properties.
      */
