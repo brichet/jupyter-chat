@@ -5,52 +5,11 @@
 
 import { expect, test } from '@jupyterlab/galata';
 
-import { openChat } from './test-utils';
+import { exposeDepsJs, getPlugin, openChat } from './test-utils';
 
 const FILENAME = 'autocompletion.chat';
 const opener = '?';
 const commands = ['?test', '?other-test', '?last-test'];
-
-// Workaround to expose a function using 'window' in the browser context.
-// Copied from https://github.com/puppeteer/puppeteer/issues/724#issuecomment-896755822
-const exposeDepsJs = (deps: Record<string, (...args: any) => any>): string => {
-  return Object.keys(deps)
-    .map(key => {
-      return `window["${key}"] = ${deps[key]};`;
-    })
-    .join('\n');
-};
-
-/**
- * The function running in browser context to get a plugin.
- *
- * This function does the same as the equivalent in InPage galata helper, without the
- * constraint on the plugin id.
- */
-const getPlugin = (pluginId: string): Promise<any> => {
-  return new Promise((resolve, reject) => {
-    const app = window.jupyterapp as any;
-    const hasPlugin = app.hasPlugin(pluginId);
-
-    if (hasPlugin) {
-      try {
-        // Compatibility with jupyterlab 4.3
-        const plugin: any = app._plugins
-          ? app._plugins.get(pluginId)
-          : app.pluginRegistry._plugins.get(pluginId);
-        if (plugin.activated) {
-          resolve(plugin.service);
-        } else {
-          void app.activatePlugin(pluginId).then(response => {
-            resolve(plugin.service);
-          });
-        }
-      } catch (error) {
-        console.error('Failed to get plugin', error);
-      }
-    }
-  });
-};
 
 test.beforeEach(async ({ page }) => {
   // Expose a function to get a plugin.
