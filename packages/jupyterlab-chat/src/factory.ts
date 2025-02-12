@@ -6,6 +6,7 @@
 import {
   ChatWidget,
   IActiveCellManager,
+  IAttachmentOpenerRegistry,
   IAutocompletionRegistry,
   ISelectionWatcher
 } from '@jupyter/chat';
@@ -77,6 +78,7 @@ export class ChatWidgetFactory extends ABCWidgetFactory<
     this._rmRegistry = options.rmRegistry;
     this._documentManager = options.documentManager;
     this._autocompletionRegistry = options.autocompletionRegistry;
+    this._attachmentOpenerRegistry = options.attachmentOpenerRegistry;
   }
 
   /**
@@ -90,6 +92,7 @@ export class ChatWidgetFactory extends ABCWidgetFactory<
     context.themeManager = this._themeManager;
     context.documentManager = this._documentManager;
     context.autocompletionRegistry = this._autocompletionRegistry;
+    context.attachmentOpenerRegistry = this._attachmentOpenerRegistry;
     return new LabChatPanel({
       context,
       content: new ChatWidget(context)
@@ -100,6 +103,7 @@ export class ChatWidgetFactory extends ABCWidgetFactory<
   private _rmRegistry: IRenderMimeRegistry;
   private _documentManager?: IDocumentManager;
   private _autocompletionRegistry?: IAutocompletionRegistry;
+  private _attachmentOpenerRegistry?: IAttachmentOpenerRegistry;
 }
 
 export namespace ChatWidgetFactory {
@@ -108,6 +112,7 @@ export namespace ChatWidgetFactory {
     rmRegistry: IRenderMimeRegistry;
     documentManager?: IDocumentManager;
     autocompletionRegistry?: IAutocompletionRegistry;
+    attachmentOpenerRegistry?: IAttachmentOpenerRegistry;
   }
 
   export interface IOptions<T extends LabChatPanel>
@@ -116,6 +121,7 @@ export namespace ChatWidgetFactory {
     rmRegistry: IRenderMimeRegistry;
     documentManager?: IDocumentManager;
     autocompletionRegistry?: IAutocompletionRegistry;
+    attachmentOpenerRegistry?: IAttachmentOpenerRegistry;
   }
 }
 

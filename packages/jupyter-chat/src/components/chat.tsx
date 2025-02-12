@@ -15,8 +15,12 @@ import React, { useState } from 'react';
 import { JlThemeProvider } from './jl-theme-provider';
 import { ChatMessages } from './chat-messages';
 import { ChatInput } from './chat-input';
+import { AttachmentOpenerContext } from '../context';
 import { IChatModel } from '../model';
-import { IAutocompletionRegistry } from '../registry';
+import {
+  IAttachmentOpenerRegistry,
+  IAutocompletionRegistry
+} from '../registry';
 
 export function ChatBody(props: Chat.IChatBodyProps): JSX.Element {
   const { model } = props;
@@ -26,7 +30,7 @@ export function ChatBody(props: Chat.IChatBodyProps): JSX.Element {
   };
 
   return (
-    <>
+    <AttachmentOpenerContext.Provider value={props.attachmentOpenerRegistry}>
       <ChatMessages rmRegistry={props.rmRegistry} model={model} />
       <ChatInput
         onSend={onSend}
@@ -41,7 +45,7 @@ export function ChatBody(props: Chat.IChatBodyProps): JSX.Element {
         documentManager={props.documentManager}
         autocompletionRegistry={props.autocompletionRegistry}
       />
-    </>
+    </AttachmentOpenerContext.Provider>
   );
 }
 
@@ -88,6 +92,7 @@ export function Chat(props: Chat.IOptions): JSX.Element {
             rmRegistry={props.rmRegistry}
             documentManager={props.documentManager}
             autocompletionRegistry={props.autocompletionRegistry}
+            attachmentOpenerRegistry={props.attachmentOpenerRegistry}
           />
         )}
         {view === Chat.View.settings && props.settingsPanel && (
@@ -126,6 +131,10 @@ export namespace Chat {
      * Autocompletion name.
      */
     autocompletionName?: string;
+    /**
+     * Attachment opener registry.
+     */
+    attachmentOpenerRegistry?: IAttachmentOpenerRegistry;
   }
 
   /**
