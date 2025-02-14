@@ -15,6 +15,10 @@ import { UUID } from '@lumino/coreutils';
 
 import { openChat, openSettings, sendMessage, USER } from './test-utils';
 
+test.use({
+  video: 'on'
+});
+
 const FILENAME = 'my-chat.chat';
 const MSG_CONTENT = 'Hello World!';
 const USERNAME = USER.identity.username;
@@ -43,12 +47,19 @@ test.describe('#notifications', () => {
 
   test.beforeEach(
     async ({ baseURL, browser, page, tmpPath, waitForApplication }) => {
-      // Create a chat file with content
-      await page.filebrowser.contents.uploadContent(
-        JSON.stringify(chatContent),
-        'text',
-        FILENAME
-      );
+      let uploadingAttempt = 3
+      while (uploadingAttempt) {
+        uploadingAttempt -= 1;
+        // Create a chat file with content
+        const contentUploaded = await page.filebrowser.contents.uploadContent(
+          JSON.stringify(chatContent),
+          'text',
+          FILENAME
+        );
+        if (contentUploaded) {
+          break;
+        }
+      }
 
       // Create a new user.
       const user2: Partial<User.IUser> = {
@@ -86,6 +97,25 @@ test.describe('#notifications', () => {
     }
   });
 
+  test('should receive notification on unread message', async ({ page }) => {
+    const chatPanel = await openChat(page, FILENAME, chatContent);
+    const messages = chatPanel.locator('.jp-chat-message');
+
+    await messages.first().scrollIntoViewIfNeeded();
+    await sendMessage(guestPage, FILENAME, MSG_CONTENT);
+    await page.waitForCondition(
+      async () => (await page.notifications).length > 0
+    );
+    const notifications = await page.notifications;
+    expect(notifications).toHaveLength(1);
+
+    // TODO: fix it, the notification should be info but is 'default'
+    // expect(notifications[0].type).toBe('info');
+    expect(notifications[0].message).toBe(
+      '1 incoming message(s) in my-chat.chat'
+    );
+  });
+
   test('should remove notification when the message is read', async ({
     page
   }) => {
@@ -104,25 +134,6 @@ test.describe('#notifications', () => {
     await messages.last().scrollIntoViewIfNeeded();
     await page.waitForCondition(
       async () => (await page.notifications).length === 0
-    );
-  });
-
-  test('should receive notification on unread message', async ({ page }) => {
-    const chatPanel = await openChat(page, FILENAME, chatContent);
-    const messages = chatPanel.locator('.jp-chat-message');
-
-    await messages.first().scrollIntoViewIfNeeded();
-    await sendMessage(guestPage, FILENAME, MSG_CONTENT);
-    await page.waitForCondition(
-      async () => (await page.notifications).length > 0
-    );
-    const notifications = await page.notifications;
-    expect(notifications).toHaveLength(1);
-
-    // TODO: fix it, the notification should be info but is 'default'
-    // expect(notifications[0].type).toBe('info');
-    expect(notifications[0].message).toBe(
-      '1 incoming message(s) in my-chat.chat'
     );
   });
 
