@@ -30,7 +30,7 @@ const INPUT_BOX_CLASS = 'jp-chat-input-container';
 export function ChatInput(props: ChatInput.IProps): JSX.Element {
   const { autocompletionName, autocompletionRegistry, model } = props;
   const autocompletion = useRef<IAutocompletionCommandsProps>();
-  const [input, setInput] = useState<string>(props.value || '');
+  const [input, setInput] = useState<string>(model.value || '');
   const [sendWithShiftEnter, setSendWithShiftEnter] = useState<boolean>(
     model.config.sendWithShiftEnter ?? false
   );
@@ -183,8 +183,7 @@ ${selection.source}
    * Triggered when cancelling edition.
    */
   function onCancel() {
-    model.value = props.value || '';
-    props.onCancel!();
+    props.onCancel?.();
   }
 
   // Set the helper text based on whether Shift+Enter is used for sending.
@@ -202,7 +201,6 @@ ${selection.source}
     <Box sx={props.sx} className={clsx(INPUT_BOX_CLASS)}>
       <Autocomplete
         options={commandOptions}
-        value={props.value}
         open={open}
         autoHighlight
         freeSolo
@@ -304,10 +302,6 @@ export namespace ChatInput {
      * The chat model.
      */
     model: IInputModel;
-    /**
-     * The initial value of the input (default to '')
-     */
-    value?: string;
     /**
      * The function to be called to send the message.
      */
