@@ -617,7 +617,7 @@ const chatCommands: JupyterFrontEndPlugin<void> = {
             // The chat is in the main area.
             app.shell.activateById(widget.id);
           }
-          widget.model.focusInput();
+          widget.model.input.focus();
         }
       }
     });

@@ -387,7 +387,7 @@ export const ChatMessage = forwardRef<HTMLDivElement, ChatMessageProps>(
             value={message.body}
             onSend={(input: string) => updateMessage(message.id, input)}
             onCancel={() => cancelEdition()}
-            model={model}
+            model={model.input}
             hideIncludeSelection={true}
           />
         ) : (

@@ -17,12 +17,11 @@ import clsx from 'clsx';
 
 import { CancelButton } from './input/cancel-button';
 import { SendButton } from './input/send-button';
-import { IChatModel } from '../model';
+import { IInputModel, InputModel } from '../input-model';
 import { IAutocompletionRegistry } from '../registry';
 import {
   AutocompleteCommand,
   IAutocompletionCommandsProps,
-  IConfig,
   Selection
 } from '../types';
 
@@ -34,9 +33,6 @@ export function ChatInput(props: ChatInput.IProps): JSX.Element {
   const [input, setInput] = useState<string>(props.value || '');
   const [sendWithShiftEnter, setSendWithShiftEnter] = useState<boolean>(
     model.config.sendWithShiftEnter ?? false
-  );
-  const [typingNotification, setTypingNotification] = useState<boolean>(
-    model.config.sendTypingNotification ?? false
   );
 
   // Display the include selection menu if it is not explicitly hidden, and if at least
@@ -50,9 +46,8 @@ export function ChatInput(props: ChatInput.IProps): JSX.Element {
   const inputRef = useRef<HTMLInputElement>();
 
   useEffect(() => {
-    const configChanged = (_: IChatModel, config: IConfig) => {
+    const configChanged = (_: IInputModel, config: InputModel.IConfig) => {
       setSendWithShiftEnter(config.sendWithShiftEnter ?? false);
-      setTypingNotification(config.sendTypingNotification ?? false);
     };
     model.configChanged.connect(configChanged);
 
@@ -233,6 +228,9 @@ ${selection.source}
             onKeyDown={handleKeyDown}
             placeholder="Start chatting"
             inputRef={inputRef}
+            onSelect={() =>
+              (model.cursorIndex = inputRef.current?.selectionStart ?? null)
+            }
             InputProps={{
               ...params.InputProps,
               endAdornment: (
@@ -259,9 +257,7 @@ ${selection.source}
         inputValue={input}
         onInputChange={(_, newValue: string) => {
           setInput(newValue);
-          if (typingNotification && model.inputChanged) {
-            model.inputChanged(newValue);
-          }
+          model.value = newValue;
         }}
         onHighlightChange={
           /**
@@ -303,7 +299,7 @@ export namespace ChatInput {
     /**
      * The chat model.
      */
-    model: IChatModel;
+    model: IInputModel;
     /**
      * The initial value of the input (default to '')
      */

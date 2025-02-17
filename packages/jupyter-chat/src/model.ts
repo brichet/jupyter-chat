@@ -16,6 +16,7 @@ import {
 } from './types';
 import { IActiveCellManager } from './active-cell-manager';
 import { ISelectionWatcher } from './selection-watcher';
+import { IInputModel, InputModel } from './input-model';
 
 /**
  * The chat model interface.
@@ -52,6 +53,11 @@ export interface IChatModel extends IDisposable {
   readonly messages: IChatMessage[];
 
   /**
+   * The input model.
+   */
+  readonly input: IInputModel;
+
+  /**
    * Get the active cell manager.
    */
   readonly activeCellManager: IActiveCellManager | null;
@@ -85,11 +91,6 @@ export interface IChatModel extends IDisposable {
    * A signal emitting when the writers change.
    */
   readonly writersChanged?: ISignal<IChatModel, IUser[]>;
-
-  /**
-   * A signal emitting when the focus is requested on the input.
-   */
-  readonly focusInputSignal?: ISignal<IChatModel, void>;
 
   /**
    * Send a message, to be defined depending on the chosen technology.
@@ -162,11 +163,6 @@ export interface IChatModel extends IDisposable {
   updateWriters(writers: IUser[]): void;
 
   /**
-   * Function to request the focus on the input of the chat.
-   */
-  focusInput(): void;
-
-  /**
    * Function called by the input on key pressed.
    */
   inputChanged?(input?: string): void;
@@ -194,6 +190,14 @@ export class ChatModel implements IChatModel {
       sendTypingNotification: true,
       ...config
     };
+
+    this._inputModel = new InputModel({
+      activeCellManager: options.activeCellManager,
+      selectionWatcher: options.selectionWatcher,
+      config: {
+        sendWithShiftEnter: config.sendWithShiftEnter
+      }
+    });
 
     this._commands = options.commands;
 
@@ -228,6 +232,11 @@ export class ChatModel implements IChatModel {
   get messages(): IChatMessage[] {
     return this._messages;
   }
+
+  get input(): IInputModel {
+    return this._inputModel;
+  }
+
   /**
    * Get the active cell manager.
    */
@@ -284,6 +293,7 @@ export class ChatModel implements IChatModel {
 
     this._configChanged.emit(this._config);
 
+    this.input.config = value;
     // Update the stacked status of the messages and the view.
     if (stackMessagesChanged) {
       if (this._config.stackMessages) {
@@ -384,13 +394,6 @@ export class ChatModel implements IChatModel {
    */
   get writersChanged(): ISignal<IChatModel, IUser[]> {
     return this._writersChanged;
-  }
-
-  /**
-   * A signal emitting when the focus is requested on the input.
-   */
-  get focusInputSignal(): ISignal<IChatModel, void> {
-    return this._focusInputSignal;
   }
 
   /**
@@ -509,13 +512,6 @@ export class ChatModel implements IChatModel {
   }
 
   /**
-   * Function to request the focus on the input of the chat.
-   */
-  focusInput(): void {
-    this._focusInputSignal.emit();
-  }
-
-  /**
    * Function called by the input on key pressed.
    */
   inputChanged?(input?: string): void {}
@@ -575,6 +571,7 @@ export class ChatModel implements IChatModel {
   private _id: string | undefined;
   private _name: string = '';
   private _config: IConfig;
+  private _inputModel: IInputModel;
   private _isDisposed = false;
   private _commands?: CommandRegistry;
   private _activeCellManager: IActiveCellManager | null;
@@ -585,7 +582,6 @@ export class ChatModel implements IChatModel {
   private _unreadChanged = new Signal<IChatModel, number[]>(this);
   private _viewportChanged = new Signal<IChatModel, number[]>(this);
   private _writersChanged = new Signal<IChatModel, IUser[]>(this);
-  private _focusInputSignal = new Signal<ChatModel, void>(this);
 }
 
 /**
