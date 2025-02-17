@@ -3,7 +3,13 @@
  * Distributed under the terms of the Modified BSD License.
  */
 
-import { ChatModel, IChatMessage, INewMessage, IUser } from '@jupyter/chat';
+import {
+  ChatModel,
+  IChatMessage,
+  IInputModel,
+  INewMessage,
+  IUser
+} from '@jupyter/chat';
 import { IChangedArgs } from '@jupyterlab/coreutils';
 import { DocumentRegistry } from '@jupyterlab/docregistry';
 import { User } from '@jupyterlab/services';
@@ -53,6 +59,8 @@ export class LabChatModel extends ChatModel implements DocumentRegistry.IModel {
     });
 
     this.sharedModel.awareness.on('change', this.onAwarenessChange);
+
+    this.input.valueChanged.connect(this.onInputChanged);
   }
 
   readonly collaborative = true;
@@ -192,8 +200,8 @@ export class LabChatModel extends ChatModel implements DocumentRegistry.IModel {
   /**
    * Function called by the input on key pressed.
    */
-  inputChanged(input?: string): void {
-    if (!input || !this.config.sendTypingNotification) {
+  onInputChanged = (_: IInputModel, value: string): void => {
+    if (!value || !this.config.sendTypingNotification) {
       return;
     }
     const awareness = this.sharedModel.awareness;
@@ -204,7 +212,7 @@ export class LabChatModel extends ChatModel implements DocumentRegistry.IModel {
     this._timeoutWriting = window.setTimeout(() => {
       this._resetWritingStatus();
     }, WRITING_DELAY);
-  }
+  };
 
   /**
    * Triggered when an awareness state changes.
