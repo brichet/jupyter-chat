@@ -25,6 +25,18 @@ export interface IChatCommandRegistry {
   getProviders(): IChatCommandProvider[];
 
   /**
+   * Get the commands matching the given word from the registry.
+   *
+   * @param inputModel - the input model to check for commands.
+   * @param fullMatch - whether the command name should fully match the current word.
+   * @returns - the list of chat commands that match the word.
+   */
+  getCommands(
+    inputModel: IInputModel,
+    fullMatch?: boolean
+  ): Promise<ChatCommand[]>;
+
+  /**
    * Handles a chat command by calling `handleChatCommand()` on the provider
    * corresponding to this chat command.
    */
@@ -111,6 +123,39 @@ export class ChatCommandRegistry implements IChatCommandRegistry {
 
   getProviders(): IChatCommandProvider[] {
     return Array.from(this._providers.values());
+  }
+
+  /**
+   * Get the commands matching the given word from the registry.
+   *
+   * @param word - the word to check for a match in commands registry.
+   * @returns - the list of chat commands that match the word.
+   */
+  async getCommands(
+    inputModel: IInputModel,
+    fullMatch?: boolean
+  ): Promise<ChatCommand[]> {
+    if (!inputModel.currentWord?.length) {
+      return [];
+    }
+
+    let newCommands: ChatCommand[] = [];
+    for (const provider of this.getProviders()) {
+      // TODO: optimize performance when this method is truly async
+      try {
+        const commands: ChatCommand[] = fullMatch
+          ? (await provider.getFullMatchChatCommands?.(inputModel)) || []
+          : await provider.getChatCommands(inputModel);
+
+        newCommands = newCommands.concat(commands);
+      } catch (e) {
+        console.error(
+          `Error when getting chat commands from command provider '${provider.id}': `,
+          e
+        );
+      }
+    }
+    return newCommands;
   }
 
   handleChatCommand(command: ChatCommand, inputModel: IInputModel) {

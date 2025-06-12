@@ -45,43 +45,22 @@ export function useChatCommands(
   const [commands, setCommands] = useState<ChatCommand[]>([]);
 
   useEffect(() => {
-    async function getCommands(_: IInputModel, currentWord: string | null) {
-      const providers = chatCommandRegistry?.getProviders();
-      if (!providers) {
-        return;
-      }
-
-      if (!currentWord?.length) {
-        setCommands([]);
+    async function updateCommands(_: IInputModel, currentWord: string | null) {
+      const newCommands =
+        (await chatCommandRegistry?.getCommands(inputModel)) || [];
+      setCommands(newCommands);
+      if (newCommands.length) {
+        setOpen(true);
+      } else {
         setOpen(false);
         setHighlighted(false);
-        return;
       }
-
-      let newCommands: ChatCommand[] = [];
-      for (const provider of providers) {
-        // TODO: optimize performance when this method is truly async
-        try {
-          newCommands = newCommands.concat(
-            await provider.getChatCommands(inputModel)
-          );
-        } catch (e) {
-          console.error(
-            `Error when getting chat commands from command provider '${provider.id}': `,
-            e
-          );
-        }
-      }
-      if (newCommands) {
-        setOpen(true);
-      }
-      setCommands(newCommands);
     }
 
-    inputModel.currentWordChanged.connect(getCommands);
+    inputModel.currentWordChanged.connect(updateCommands);
 
     return () => {
-      inputModel.currentWordChanged.disconnect(getCommands);
+      inputModel.currentWordChanged.disconnect(updateCommands);
     };
   }, [inputModel]);
 
