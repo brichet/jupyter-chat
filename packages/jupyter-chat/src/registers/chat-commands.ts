@@ -82,6 +82,12 @@ export interface IChatCommandProvider {
   getChatCommands(inputModel: IInputModel): Promise<ChatCommand[]>;
 
   /**
+   * Async function which accepts the input model and returns a list of
+   * chat commands that fully match the current word.
+   */
+  getFullMatchChatCommands?(inputModel: IInputModel): Promise<ChatCommand[]>;
+
+  /**
    * Function called when a chat command is run by the user through the chat
    * commands menu.
    */

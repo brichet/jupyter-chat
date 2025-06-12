@@ -47,16 +47,22 @@ export class EmojiCommandProvider implements IChatCommandProvider {
   // regex used to test the current word
   private _regex: RegExp = /^:\w*:?/;
 
-  async getChatCommands(inputModel: IInputModel) {
+  async getChatCommands(inputModel: IInputModel, fullMatch?: boolean) {
     const match = inputModel.currentWord?.match(this._regex)?.[0];
     if (!match) {
       return [];
     }
 
     const commands = this._slash_commands.filter(cmd =>
-      cmd.name.startsWith(match)
+      fullMatch ? cmd.name === match : cmd.name.startsWith(match)
     );
     return commands;
+  }
+
+  async getFullMatchChatCommands(
+    inputModel: IInputModel
+  ): Promise<ChatCommand[]> {
+    return this.getChatCommands(inputModel, true);
   }
 
   async handleChatCommand(

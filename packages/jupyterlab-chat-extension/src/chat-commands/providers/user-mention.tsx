@@ -30,7 +30,7 @@ class MentionCommandProvider implements IChatCommandProvider {
   // regex used to test the current word
   private _regex: RegExp = /^@[\w-]*:?/;
 
-  async getChatCommands(inputModel: IInputModel) {
+  async getChatCommands(inputModel: IInputModel, fullMatch?: boolean) {
     this._users.clear();
     const match = inputModel.currentWord?.match(this._regex)?.[0];
     if (!match) {
@@ -54,7 +54,11 @@ class MentionCommandProvider implements IChatCommandProvider {
     // Build the commands for each user.
     const commands: ChatCommand[] = Array.from(this._users)
       .sort()
-      .filter(user => user[0].toLowerCase().startsWith(match.toLowerCase()))
+      .filter(user =>
+        fullMatch
+          ? user[0].toLowerCase() === match.toLowerCase()
+          : user[0].toLowerCase().startsWith(match.toLowerCase())
+      )
       .map(user => {
         return {
           name: user[0],
@@ -63,6 +67,12 @@ class MentionCommandProvider implements IChatCommandProvider {
         };
       });
     return commands;
+  }
+
+  async getFullMatchChatCommands(
+    inputModel: IInputModel
+  ): Promise<ChatCommand[]> {
+    return this.getChatCommands(inputModel, true);
   }
 
   async handleChatCommand(
