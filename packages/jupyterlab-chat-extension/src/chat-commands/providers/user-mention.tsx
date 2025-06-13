@@ -56,7 +56,7 @@ class MentionCommandProvider implements IChatCommandProvider {
       .sort()
       .filter(user =>
         fullMatch
-          ? user[0].toLowerCase() === match.toLowerCase()
+          ? user[0].toLowerCase() === inputModel.currentWord?.toLowerCase()
           : user[0].toLowerCase().startsWith(match.toLowerCase())
       )
       .map(user => {

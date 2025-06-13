@@ -12,12 +12,13 @@ import { Box } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 
 import { ChatCommand, IChatCommandRegistry } from '../../registers';
-import { IInputModel } from '../../input-model';
+import { IInputModel, WHITESPACE } from '../../input-model';
 
 type AutocompleteProps = GenericAutocompleteProps<any, any, any, any>;
 
 type UseChatCommandsReturn = {
   autocompleteProps: Omit<AutocompleteProps, 'renderInput'>;
+  pasteText: (sentence: string | null) => Promise<void>;
   menu: {
     open: boolean;
     highlighted: boolean;
@@ -45,24 +46,109 @@ export function useChatCommands(
   const [commands, setCommands] = useState<ChatCommand[]>([]);
 
   useEffect(() => {
-    async function updateCommands(_: IInputModel, currentWord: string | null) {
-      const newCommands =
-        (await chatCommandRegistry?.getCommands(inputModel)) || [];
-      setCommands(newCommands);
-      if (newCommands.length) {
-        setOpen(true);
-      } else {
-        setOpen(false);
-        setHighlighted(false);
-      }
-    }
-
     inputModel.currentWordChanged.connect(updateCommands);
 
     return () => {
       inputModel.currentWordChanged.disconnect(updateCommands);
     };
   }, [inputModel]);
+
+  async function updateCommands(model: IInputModel, _: string | null) {
+    const newCommands = (await chatCommandRegistry?.getCommands(model)) || [];
+    setCommands(newCommands);
+    if (newCommands.length) {
+      setOpen(true);
+    } else {
+      setOpen(false);
+      setHighlighted(false);
+    }
+  }
+
+  const pasteText = async (text: string | null): Promise<void> => {
+    if (text === null) {
+      return;
+    }
+    inputModel.currentWordChanged.disconnect(updateCommands);
+    try {
+      // const input = inputModel.value;
+      let index =
+        inputModel.cursorIndex ?? inputModel.value.length - text.length;
+      // Keep the words number
+      const count = text.split(/\s+/).length;
+
+      // move index to the beginning of the first word
+      while (
+        index < inputModel.value.length &&
+        WHITESPACE.has(inputModel.value[index])
+      ) {
+        index++;
+      }
+
+      for (let i = 0; i < count; i++) {
+        console.log('INDEX', index);
+        inputModel.cursorIndex = index;
+        const commands =
+          (await chatCommandRegistry?.getCommands(inputModel, true)) || [];
+        console.log('COMMANDS', commands, inputModel.currentWord);
+        if (commands.length) {
+          // Keep only the first command
+          const command = commands[0];
+          // if replaceWith is set, handle the command immediately
+          if (command.replaceWith) {
+            inputModel.replaceCurrentWord(command.replaceWith);
+            continue;
+          }
+
+          // otherwise, defer handling to the command provider
+          chatCommandRegistry?.handleChatCommand(command, inputModel);
+          index = inputModel.cursorIndex;
+        } else {
+          index =
+            inputModel.cursorIndex + (inputModel.currentWord?.length ?? 0);
+        }
+
+        // Move index to the beginning of the next word
+        while (
+          index < inputModel.value.length &&
+          WHITESPACE.has(inputModel.value[index])
+        ) {
+          index++;
+        }
+      }
+      // console.log('WORDS', words);
+      // for (const word of words) {
+      //   console.log('WORD', word);
+      //   // Add each word one by one to the input
+      //   const index = inputModel.cursorIndex || inputModel.value.length;
+      //   const start = inputModel.value.slice(0, index);
+      //   const end = inputModel.value.slice(index);
+      //   inputModel.value = start + word + end;
+      //   inputModel.cursorIndex = index + word.length;
+
+      //   // If the word in not a whitespace or empty word, check if it full matches a
+      //   // commands to trigger it.
+      //   if (word && !word.match(/\s+/)) {
+      //     const commands =
+      //       (await chatCommandRegistry?.getCommands(inputModel, true)) || [];
+      //     console.log('COMMANDS', word, commands, inputModel.currentWord);
+      //     if (commands.length) {
+      //       // Keep only the first command
+      //       const command = commands[0];
+      //       // if replaceWith is set, handle the command immediately
+      //       if (command.replaceWith) {
+      //         inputModel.replaceCurrentWord(command.replaceWith);
+      //         continue;
+      //       }
+
+      //       // otherwise, defer handling to the command provider
+      //       chatCommandRegistry?.handleChatCommand(command, inputModel);
+      //     }
+      //   }
+      // }
+    } finally {
+      inputModel.currentWordChanged.connect(updateCommands);
+    }
+  };
 
   /**
    * onChange(): the callback invoked when a command is selected from the chat
@@ -165,6 +251,7 @@ export function useChatCommands(
           setOpen(false);
         }
     },
+    pasteText,
     menu: {
       open,
       highlighted

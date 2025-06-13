@@ -11,7 +11,7 @@ import { ISelectionWatcher } from './selection-watcher';
 import { IChatContext } from './model';
 import { IAttachment, IUser } from './types';
 
-const WHITESPACE = new Set([' ', '\n', '\t']);
+export const WHITESPACE = new Set([' ', '\n', '\t']);
 
 /**
  * The chat input interface.
@@ -373,6 +373,7 @@ export class InputModel implements IInputModel {
       this.cursorIndex
     );
     this.value = this.value.slice(0, start) + newWord + this.value.slice(end);
+    this.cursorIndex = start + newWord.length;
   }
 
   /**

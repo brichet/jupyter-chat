@@ -54,7 +54,9 @@ export class EmojiCommandProvider implements IChatCommandProvider {
     }
 
     const commands = this._slash_commands.filter(cmd =>
-      fullMatch ? cmd.name === match : cmd.name.startsWith(match)
+      fullMatch
+        ? cmd.name === inputModel.currentWord
+        : cmd.name.startsWith(match)
     );
     return commands;
   }
